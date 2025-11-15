@@ -1,0 +1,10 @@
+{
+    "C_Cpp.errorSquiggles": "disabled",
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/parth123/SimpleLang_Compiler",
+            "binaryPath": "/home/parth123/SimpleLang_Compiler/program",
+            "binaryArgs": []
+        }
+    ]
+}
