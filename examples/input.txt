@@ -2,6 +2,7 @@ int a;
 int b;
 b=2;
 a = 5;
-if(a >= (a+b)){
+if(a){
     b=5;
+    a=6;
 }

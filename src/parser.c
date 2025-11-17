@@ -152,7 +152,7 @@ ParserNode *parseIf(Parser *parser){
         addChild(ifNode,stmt);
     }
     Token t1 = getCurrentToken(parser);
-    if(!isMatch(TOKEN_RBRACE, parser)){
+    if(!isMatch(TOKEN_RBRACE, parser) ){
         printf("%s",t1.value);
         printf("Right bracket not present in if Statement\n");
         return NULL;
@@ -165,15 +165,17 @@ ParserNode *parseCondition(Parser *parser){
     ParserNode *cond = createNode(NODE_CONDITION,getCurrentToken(parser));
     ParserNode *lExp = parseExpression(parser);
     addChild(cond,lExp);
-    if(!isComparator(parser)){
-        printf("Valid Comparator not present\n");
+    if(getCurrentToken(parser).type != TOKEN_RPAREN){
+        if(!isComparator(parser)){
+            printf("Valid Comparator not present\n");
+        }
+        Token t = getCurrentToken(parser);
+        ParserNode *comp = createNode(NODE_COMPARATOR,t); 
+        advanceToken(parser);
+        addChild(cond,comp);
+        ParserNode *rExp = parseExpression(parser);
+        addChild(cond,rExp);
     }
-    Token t = getCurrentToken(parser);
-    ParserNode *comp = createNode(NODE_COMPARATOR,t); 
-    advanceToken(parser);
-    addChild(cond,comp);
-    ParserNode *rExp = parseExpression(parser);
-    addChild(cond,rExp);
     return cond;
 }
 

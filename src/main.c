@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
+#include "semantic.h"
 #include<stdlib.h>
 
 int main(){
@@ -32,10 +33,18 @@ int main(){
     Parser *parser = createParser(token_list,count);
     ParserNode * root = parseProgram(parser);
     printParser(root,3);
-    printf("Syntax Analysis complete");
+    printf("Syntax Analysis complete\n");
     
+    checkSemantic(root);
+
+    printf("Semantic Analysis Complete\n");
 
     freeParser(root);
     free(token_list);
     return 0;
 }
+
+
+
+
+
