@@ -18,7 +18,7 @@ Assignment-> Identifier "=" Expression ";"
 Condition-> Expression Comparator Expression 
 comparator -> "==" | ">=" | "<=" | ">" | "<" | "!=" 
 
-expression -> Term {('+' || '-')}  Term ";"
+expression -> Term {('+' || '-')  Term }
 Term -> Identifier | Number | '(' Expression ')'
 
 */

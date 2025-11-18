@@ -131,7 +131,9 @@ ValueType checkCondition(Scope *scope, ParserNode *cond){
     ValueType left = checkExpression(scope,lNode);
     ValueType right = checkExpression(scope,rNode);
 
-    if(op->token.type != TOKEN_EQ || op->token.type != TOKEN_GT || op->token.type != TOKEN_GTE || op->token.type != TOKEN_LT || op->token.type != TOKEN_LTE || op->token.type != TOKEN_NEQ ){
+    if(op->token.type != TOKEN_EQ && op->token.type != TOKEN_NEQ &&
+        op->token.type != TOKEN_GTE && op->token.type != TOKEN_GT &&
+         op->token.type != TOKEN_LTE && op->token.type != TOKEN_LT ){
         printf("Semantic Error: Not a valid operator\n");
     }
     if(left != right){
@@ -264,7 +266,7 @@ void checkStatement(Scope *scope, ParserNode *stmt){
     }
 }
 
-void checkSemantic(ParserNode *root){
+Scope *checkSemantic(ParserNode *root){
     if(!root || root->type != NODE_ROOT ){
         printf("Root Node Expected\n");
         exit(1);
@@ -276,5 +278,5 @@ void checkSemantic(ParserNode *root){
             checkStatement(global,child);
         }
     }
-    freeScope(global);
+    return global;
 }

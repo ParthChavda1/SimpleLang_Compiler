@@ -35,7 +35,7 @@ void checkStatement(Scope *scope, ParserNode *stmt);
 ValueType checkTerm(Scope *scope, ParserNode *term);
 
 
-void checkSemantic(ParserNode *root);
+Scope *checkSemantic(ParserNode *root);
 
 
 
