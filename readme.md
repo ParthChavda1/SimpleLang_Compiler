@@ -206,8 +206,7 @@ python3 8bit-computer/asm/asm.py output.asm > 8bit-computer/memory.list
 
 ```
 SIMPLELANG_COMPILER/
-│
-├── .vscode/
+
 │
 ├── examples/
 │   └── input.txt
