@@ -12,7 +12,7 @@ typedef struct {
 }CodeGen;
 
 // Functions for generating Code according to node
-void generateCode(const char *filepath,ParserNode *root,Scope *s);
+void generateCode(const char *filepath,ParserNode *root,Symbol *s);
 
 void genStatement(CodeGen *cg,ParserNode *stmt);
 void genAssignment(CodeGen *cg,ParserNode *node);

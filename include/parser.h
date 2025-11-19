@@ -1,5 +1,5 @@
-#ifndef PARSER
-#define PARSER
+#ifndef PARSER_H
+#define PARSER_H
 
 
 #include "lexer.h"
@@ -23,6 +23,7 @@ Term -> Identifier | Number | '(' Expression ')'
 
 */
 
+extern int parser_err_count;
 
 typedef enum {
     NODE_ROOT,

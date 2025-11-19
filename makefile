@@ -11,7 +11,7 @@ build: $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET)
 
 run:
-	./$(TARGET)
+	./$(TARGET) $(INPUT) $(OUTPUT)
 
 debug: build
 	gdb ./$(TARGET)

@@ -1,10 +1,10 @@
-#ifndef SEMENTIC
-#define SEMENTIC
+#ifndef SEMENTIC_H
+#define SEMENTIC_H
 
 #include "parser.h"
-
 #include<stdbool.h>
 
+extern int semantic_err_count;
 typedef enum{
     TYPE_INT,
     TYPE_BOOL,
@@ -25,6 +25,7 @@ typedef struct Scope{
 
 Scope *createScope(Scope *parent);
 void freeScope(Scope *scope);
+void freeSymbolTable(Symbol *s);
 bool addSymbol(Scope *scope, char *name, ValueType type);
 Symbol *symbolLookup(Scope *scope, char *name);
 
@@ -35,7 +36,7 @@ void checkStatement(Scope *scope, ParserNode *stmt);
 ValueType checkTerm(Scope *scope, ParserNode *term);
 
 
-Scope *checkSemantic(ParserNode *root);
+Symbol *checkSemantic(ParserNode *root);
 
 
 

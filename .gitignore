@@ -1,0 +1,8 @@
+.vscode/
+*.o
+program
+*.gtkw
+*.vcd
+
+computer
+memory.list

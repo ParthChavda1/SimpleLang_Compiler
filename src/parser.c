@@ -1,10 +1,23 @@
 #include "parser.h"
 #include<stdlib.h>
+#include<stdarg.h>
+
+int parser_err_count = 0;
+
+void parserError(Parser *parser,Token token, const char *err,...){
+    printf("Syntax Error:");
+    va_list args;
+    va_start(args,err);
+    vprintf(err,args);
+    va_end(args);
+    printf("at Token %s (Type=%d, index = %d)\n",token.value,token.type,parser->current);
+    parser_err_count++;
+}
 
 Parser *createParser(Token *tokens, int total_count){
     Parser *parser = (Parser *)malloc(sizeof(Parser));
     if(parser == NULL){
-        printf("Memory Allocation failed\n");
+        printf("Memory Allocation failed.\n");
         exit(1);
     }
     parser->tokens = tokens;
@@ -16,7 +29,7 @@ Parser *createParser(Token *tokens, int total_count){
 ParserNode *createNode(NodeType type, Token token){
     ParserNode *node = malloc(sizeof(ParserNode));
     if(node == NULL){
-        printf("Memory Allocation failed\n");
+        printf("Memory Allocation failed.\n");
         exit(1);
     }
     node->type = type;
@@ -25,7 +38,7 @@ ParserNode *createNode(NodeType type, Token token){
     node->child_capacity = 2;
     node->children = malloc(sizeof(ParserNode *)*node->child_capacity);
     if(node->children == NULL){
-        printf("Memory Allocation failed\n");
+        printf("Memory Allocation failed.\n");
         exit(1);
     }
     return node;
@@ -36,7 +49,7 @@ void addChild(ParserNode *parent, ParserNode *child){
         parent->child_capacity *=2;
         ParserNode **new_children = realloc(parent->children,sizeof(ParserNode *)*parent->child_capacity);
         if(new_children ==NULL){
-            printf("ERROR: Failed to realloc children array\n");
+            printf("Memory Allocation Failed.\n");
             exit(1); 
         }
         parent->children = new_children;
@@ -51,7 +64,6 @@ ParserNode *parseProgram(Parser *parser){
     while(getCurrentToken(parser).type != TOKEN_EOF ){
         ParserNode *stmt = parseStatement(parser);
         addChild(root,stmt);
-        // advanceToken(parser);
     }
     return root;
 }
@@ -62,26 +74,22 @@ ParserNode *parseStatement(Parser *parser){
     ParserNode *stmt = createNode(NODE_BODY,empty);
     ParserNode *s1;
     Token t = getCurrentToken(parser);
-        if(t.type == TOKEN_IF){
-            s1 = parseIf(parser);
-            addChild(stmt,s1);
-        }
-        else if(t.type == TOKEN_INT) {
-            s1 =  parseDeclaration(parser);
-            addChild(stmt,s1);
-        }
-        else if(t.type == TOKEN_IDENTIFIER){
-            s1 = parseAssignment(parser);
-            addChild(stmt,s1);
-        } 
-        // advanceToken(parser);
-        // t = getCurrentToken(parser);
-    // }
-    // else{
-        //     printf("Error near Token %s", t.value)
-    //     advanceToken(parser);
-    //     return NULL;
-    // }
+    if(t.type == TOKEN_IF){
+        s1 = parseIf(parser);
+        addChild(stmt,s1);
+    }
+    else if(t.type == TOKEN_INT) {
+        s1 =  parseDeclaration(parser);
+        addChild(stmt,s1);
+    }
+    else if(t.type == TOKEN_IDENTIFIER){
+        s1 = parseAssignment(parser);
+        addChild(stmt,s1);
+    } 
+    else{
+        parserError(parser,t,"Unexpected Token in Statement");
+
+    }
     return stmt;
 }
 
@@ -90,16 +98,14 @@ ParserNode *parseDeclaration(Parser *parser){
     Token t = getCurrentToken(parser); 
     ParserNode *node = createNode(NODE_DECLARATION,t);
     advanceToken(parser);
+    t = getCurrentToken(parser);
     if(!isMatch(TOKEN_IDENTIFIER,parser)){
-        printf("Identifier not found in declaration\n");
-        return NULL;
+        parserError(parser,t,"Expected Identifier");
     }
-    Token i= parser->tokens[parser->current - 1];
-    ParserNode *n2 = createNode(NODE_IDENTIFIER,i);
+    ParserNode *n2 = createNode(NODE_IDENTIFIER,t);
     addChild(node,n2);
     if(!isMatch(TOKEN_SEMICOLON, parser)){
-        printf("Semicolon(;) Not present at end of Declaration\n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Missing semicolon(;) after declaration");
     }
     return node;
 }
@@ -113,18 +119,16 @@ ParserNode *parseAssignment(Parser *parser){
         addChild(assignNode,id);
     }
     else{
-        printf("Identifier is not available in assignment\n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Expected identifier in Assignment");
     }
     if(!isMatch(TOKEN_ASSIGN,parser)){
-        printf("Assignment operator is not present\n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Expected '=' in Assignment");
     }
     ParserNode *exp = parseExpression(parser);
     addChild(assignNode,exp);
     if(!isMatch(TOKEN_SEMICOLON,parser)){
-        printf("Semicolon not present at end of Assignment\n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Missing semicolon(;) after assignment");
+
     } 
     return assignNode;
 }
@@ -134,18 +138,18 @@ ParserNode *parseIf(Parser *parser){
     ParserNode *ifNode = createNode(NODE_IF,(getCurrentToken(parser)));
     advanceToken(parser);
     if(!isMatch(TOKEN_LPAREN, parser)){
-        printf("Left parenthesis not present in if statement \n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Expected '(' after 'if'");
+
     }
     ParserNode *cond = parseCondition(parser);
     addChild(ifNode,cond);
     if(!isMatch(TOKEN_RPAREN, parser)){
-        printf("Right parenthesis not present in if statement \n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Expected ')' after condition");
+
     }
     if(!isMatch(TOKEN_LBRACE, parser)){
-        printf("Left bracket not present in if statement \n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Expected '{' after 'if()'");
+
     }
     while(getCurrentToken(parser).type != TOKEN_RBRACE && getCurrentToken(parser).type != TOKEN_EOF ){
         ParserNode *stmt = parseStatement(parser);
@@ -154,8 +158,8 @@ ParserNode *parseIf(Parser *parser){
     Token t1 = getCurrentToken(parser);
     if(!isMatch(TOKEN_RBRACE, parser) ){
         printf("%s",t1.value);
-        printf("Right bracket not present in if Statement\n");
-        return NULL;
+        parserError(parser,getCurrentToken(parser),"Expected '}' at the end of if block");
+
     }
     return ifNode;
 }
@@ -167,7 +171,7 @@ ParserNode *parseCondition(Parser *parser){
     addChild(cond,lExp);
     if(getCurrentToken(parser).type != TOKEN_RPAREN){
         if(!isComparator(parser)){
-            printf("Valid Comparator not present\n");
+            parserError(parser,getCurrentToken(parser),"Expected valid Comparison operator");
         }
         Token t = getCurrentToken(parser);
         ParserNode *comp = createNode(NODE_COMPARATOR,t); 
@@ -221,11 +225,12 @@ ParserNode *parseTerm(Parser *parser){
         ParserNode *exp = parseExpression(parser);
         addChild(term,exp);
         if(!isMatch(TOKEN_RPAREN,parser)){
-            printf("Right Parenthisis not Found\n");
-            return NULL;
+            parserError(parser,getCurrentToken(parser),"Missing ')' ");
+
         }
         return term;
     }
+            parserError(parser,t,"Invalid Expression Term");
     return NULL;
 }
 
@@ -261,7 +266,7 @@ bool isComparator(Parser *parser){
     return false;
 }
 
-char * nodeTypeName(NodeType type){
+char *nodeTypeName(NodeType type){
     switch(type){
         case NODE_ROOT: return "ROOT";
         case NODE_BODY: return "BODY";
@@ -281,14 +286,19 @@ char * nodeTypeName(NodeType type){
 
 void printParser(ParserNode *root, int depth){
     if(!root) return;
-    for(int i=0;i<depth ; i++) printf(" ");
-    printf("%s", nodeTypeName(root->type));
-    if(root->token.value[0] != '\0'){
-        printf("(%s)",root->token.value);
+    if(parser_err_count > 0){
+        printf("Total Syntax Error: %d\n",parser_err_count);
     }
-    printf("\n");
-    for(int i = 0; i<root->child_count; i++){
-        printParser(root->children[i],depth+3);
+    else{
+        for(int i=0;i<depth ; i++) printf(" ");
+        printf("%s", nodeTypeName(root->type));
+        if(root->token.value[0] != '\0'){
+            printf("(%s)",root->token.value);
+        }
+        printf("\n");
+        for(int i = 0; i<root->child_count; i++){
+            printParser(root->children[i],depth+3);
+        }
     }
 }
 

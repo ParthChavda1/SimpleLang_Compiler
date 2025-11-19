@@ -33,7 +33,7 @@ void emitData(CodeGen *cg, const char *fmt,...){
 }
 
 
-void generateCode(const char *filepath,ParserNode *root,Scope *s){
+void generateCode(const char *filepath,ParserNode *root,Symbol *s){
     CodeGen cg;
     cg.output = fopen(filepath,"w");
     cg.label_id = 0;
@@ -48,16 +48,13 @@ void generateCode(const char *filepath,ParserNode *root,Scope *s){
     emitText(&cg,"hlt");
 
     fprintf(cg.output,"\n\n.data\n\n");
-    // while(s){
-        Symbol *symbol = s->symbols;
+        Symbol *symbol = s;
         while(symbol){
             
             emitData(&cg,"%s = 0",symbol->name);
             symbol = symbol->next;
         }
-        // s = s->parent; 
-    // }
-// 
+
     fclose(cg.output);
 }
 
@@ -132,8 +129,8 @@ void genExpression(CodeGen *cg,ParserNode *exp){
             emitText(cg,"lda %%%s",exp->token.value);
             return;
         default:
-            printf("Invalid Expression Node");
-            exit(1);
+            printf("Invalid Expression Node\n");
+            return;
     }
 
 }
@@ -161,11 +158,6 @@ void genIf(CodeGen *cg,ParserNode *nodeIf){
 int genCondition(CodeGen *cg,ParserNode *cond,char **jump1,char **jump2){
     
     if(cond->child_count ==1){
-
-        // if(cond->children[0]->token.value != '0'){
-        //     *jump1 = "jmp"; 
-        //     *jump2 = NULL; 
-        // }
         *jump1 = NULL; 
         *jump2 = NULL; 
         return 0;

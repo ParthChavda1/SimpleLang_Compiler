@@ -1,5 +1,5 @@
-int a;
 int b;
+int a;
 b=2;
 a = 5;
 if(a > 5 ){

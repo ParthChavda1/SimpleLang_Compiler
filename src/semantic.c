@@ -2,15 +2,51 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-
+#include<stdarg.h>
  
+Symbol *sym_table;
 
 
+int semantic_err_count = 0;
+void semanticError(const char *err,...){
+    printf("Semantic Error:");
+    va_list args;
+    va_start(args,err);
+    vprintf(err,args);
+    printf("\n");
+    semantic_err_count++;
+}
+
+Symbol *addToSymbolTable(Scope *s){
+    Symbol *ss = s->symbols;
+    while(ss){
+        Symbol *sym = malloc(sizeof(Symbol));
+        sym->name = strdup(ss->name);
+        sym->type = ss->type;
+        if(sym_table ==NULL){
+            sym->next = NULL;
+        }
+        else{
+            sym->next = sym_table;
+        }
+        sym_table = sym;
+        ss = ss->next;
+    }
+    return sym_table;
+}
+
+void freeSymbolTable(Symbol *s){
+    while (s){
+        Symbol *next = s->next;
+        free(s);
+        s= next; 
+    }
+}
 
 Scope *createScope(Scope *parent){
     Scope *s = malloc(sizeof(Scope));
     if(s==NULL){
-        printf("Error In Momory Allocation.\n");
+        semanticError("Memory Allocation Failed for Scope");
         exit(1);
     }
     s->parent = parent;
@@ -22,12 +58,7 @@ Scope *createScope(Scope *parent){
 void freeScope(Scope *scope){
     if(!scope) return;
     Symbol *s = scope->symbols;
-    while(s){
-        Symbol *nxt = s->next;
-        if(s->name) free(s->name);
-        free(s);
-        s = nxt; 
-    }
+    freeSymbolTable(s);
     free(scope);
 }
 
@@ -45,14 +76,17 @@ Symbol* symbolLookup(Scope *scope, char *name){
 
 bool addSymbol(Scope *scope, char *name, ValueType type){
     if(!scope || !name){
-        printf("Proper Name and scope not provided\n");
+        semanticError("Proper Name and scope not provided.");
         return false;
     }
-    if(symbolLookup(scope,name) != NULL) return false;
+    if(symbolLookup(scope,name) != NULL){
+        semanticError("Redeclaration of %s variable.",name);
+        return false;
+    } 
     Symbol *s = malloc(sizeof(Symbol));
     if(s==NULL) {
-        printf("Memory Allocation Failed\n");
-        exit(1);
+        semanticError("Memory Allocation Failed for Symbol");
+        return false;
     }
     // strdup(s->name,name);
     s->name = strdup(name);
@@ -71,21 +105,19 @@ ParserNode *getChild(ParserNode *node,int idx){
 // expression -> Term {('+' || '-')  Term }
 ValueType checkExpression(Scope *scope, ParserNode *exp){
     if(!exp || exp->type != NODE_EXPRESSION){
-        printf("Expeced Expression Node\n");
+        semanticError("Expeced Expression Node.");
+        return TYPE_UNKNOWN;
     }
     if(exp->child_count < 1){
-        printf("Expression Node has no Children\n");
+        semanticError("Expression Node has no Children.");
+        return TYPE_UNKNOWN;
     }
     ParserNode *lTerm = getChild(exp,0);
-    if(!lTerm) {
-        printf("Missing First Term is Expression\n");
-        exit(1);
-    }
     ValueType left = checkTerm(scope,lTerm);
     if(exp->child_count == 1) return left;
     if(exp->child_count %2 == 0){
-        printf("Error is Expression\n");
-        exit(1);
+        semanticError("Error is Expression.");
+        return TYPE_UNKNOWN;
     }
     for(int i=1;i<exp->child_count; i+=2){
         ParserNode *op = getChild(exp,i);
@@ -93,13 +125,13 @@ ValueType checkExpression(Scope *scope, ParserNode *exp){
         ValueType right = checkTerm(scope, rTerm);
         if(op->token.type == TOKEN_ADD || op->token.type ==TOKEN_SUB){
             if(left!= TYPE_INT || right != TYPE_INT){
-                printf("Semantic Error: Operator + and - require in operands\n");
-                exit(1);
+                semanticError("Operator + and - require in operands.");
+                return TYPE_UNKNOWN;
             }
         }
         else{
-            printf("Semantic Error: Unknown operator in Expression\n");
-            exit(1);
+            semanticError("Unknown operator in Expression.");
+            return TYPE_UNKNOWN;
         } 
         
     }
@@ -109,8 +141,8 @@ ValueType checkExpression(Scope *scope, ParserNode *exp){
 // Condition-> Expression Comparator Expression 
 ValueType checkCondition(Scope *scope, ParserNode *cond){
     if(!cond || cond->type != NODE_CONDITION ){
-        printf("Expected Condition Node\n");
-        exit(1);
+        semanticError("Expected Condition Node.");
+        return TYPE_UNKNOWN;
     }
     if(cond->child_count == 1){
         ParserNode *firstOnly = getChild(cond,0);
@@ -120,8 +152,8 @@ ValueType checkCondition(Scope *scope, ParserNode *cond){
         }
     }
     if(cond->child_count == 2 || cond->child_count >3){
-        printf("Condition Node must have atleast 3 Children\n");
-        exit(1);
+        semanticError("Condition Node must have atleast 3 Children.");
+        return TYPE_UNKNOWN;
     }
 
     ParserNode *lNode = getChild(cond,0);
@@ -134,11 +166,12 @@ ValueType checkCondition(Scope *scope, ParserNode *cond){
     if(op->token.type != TOKEN_EQ && op->token.type != TOKEN_NEQ &&
         op->token.type != TOKEN_GTE && op->token.type != TOKEN_GT &&
          op->token.type != TOKEN_LTE && op->token.type != TOKEN_LT ){
-        printf("Semantic Error: Not a valid operator\n");
+        semanticError("%s is not a valid operator",op->token.value);
+        return TYPE_UNKNOWN;
     }
     if(left != right){
-        printf("Condition requires Both expression to have same type\n");
-        exit(1);
+        semanticError("Condition requires Both expression to have same type.");
+        return TYPE_UNKNOWN;
     }
     return TYPE_BOOL;
 }
@@ -146,15 +179,15 @@ ValueType checkCondition(Scope *scope, ParserNode *cond){
 // Term -> Identifier | Number | '(' Expression ')'
 ValueType checkTerm(Scope *scope, ParserNode *term){
      if(!term){
-        printf("Term Node is Expected");
-        exit(1);
+        semanticError("Term Node is Expected.");
+        return TYPE_UNKNOWN;
      }
      switch(term->type) {
         case NODE_IDENTIFIER:
             Symbol *s = symbolLookup(scope,term->token.value);
             if(!s){
-                printf("%s not declared",term->token.value);
-                exit(1);
+                semanticError("%s variable is not declared.",term->token.value);
+                return TYPE_UNKNOWN;
             }
             return s->type;
         case NODE_NUMBER:
@@ -165,21 +198,16 @@ ValueType checkTerm(Scope *scope, ParserNode *term){
                 return checkTerm(scope,trm);
             }
             else{
-                // ParserNode *open = getChild(term,0);
                 ParserNode *exp = getChild(term,0);
-                // ParserNode *close = getChild(term,2);
                 if(!exp){
-                    printf("Invalid Parenthesis Term: Expression Missing");
-                    exit(1);
+                    semanticError("Invalid Parenthesis Term: Expression Missing.");
+                    return TYPE_UNKNOWN;
                 }
                 return checkExpression(scope,exp);
             }
-            // else{
-            //     printf("Semantic Error: Invalid Term Node shape");
-            //     return TYPE_UNKNOWN;
-            // }
+
         default:
-            printf("Invalid Node inside Term");
+            semanticError("Invalid Node inside Term.");
             return TYPE_UNKNOWN;
         }
 
@@ -188,89 +216,86 @@ ValueType checkTerm(Scope *scope, ParserNode *term){
 // statement -> Ifstatmemt | Declaration | Assignment
 void checkStatement(Scope *scope, ParserNode *stmt){
     if(!stmt){
-        printf("Null Statement Node\n");
-        exit(1);
+        semanticError("Null Statement Node.");
+        return ;
     }
     ParserNode *type = stmt->children[0];
     switch(type->type){
         case NODE_DECLARATION:
-            if(type->child_count != 1){
-                printf("Declaration must have Identifier child\n");
-                exit(1);
-            }
             ParserNode *id = getChild(type,0);
             if(!id || id->type != NODE_IDENTIFIER){
-                printf("Declaration missing identifier\n");
-                exit(1);
+                semanticError("Declaration is missing identifier.");
+                return ;
             }
             char *name = id->token.value;
             if(!addSymbol(scope,name,TYPE_INT)){
-                printf("Identifier Already Exist\n");
-                exit(1);
+                semanticError("Identifier Already Exist.");
+                return ;
             }
             break;
         case NODE_ASSIGNMENT:
             if(type->child_count < 2 ){
-                printf("Assignment node has too few children.\n");
-                exit(1);
+                semanticError("Assignment node has too few children.");
+                return ;
             }
             id = getChild(type,0);
             ParserNode *exp = getChild(type,1);
             if(!id || id->type != NODE_IDENTIFIER){
-                printf("Assignment Missing Identifie\nr");
+                semanticError("Assignment Missing Identifier.");
+                return ;
             }
             if(!exp){
-                printf("Assgnment missing RHS Expression\n");
+                semanticError("Assgnment missing RHS Expression.");
+                return ;
             }
             Symbol *s = symbolLookup(scope,id->token.value);
             if(!s){
-                printf("Undeclared Variable\n");
+                semanticError("Assgnment to undeclared variable %s.",id->token.value);
+                return ;
             }
             ValueType rhs = checkExpression(scope,exp);
             if(rhs != TYPE_INT){
-                printf("Assignment Type mismatch\n");
-                exit(1);
+                semanticError("Type mismatch in assignment to %s.",id->token.value);
+                return ;
             }
             break;
         case NODE_IF:
             if(type->child_count <2){
-                printf("If node Malformed\n");
-                exit(1);
+                semanticError("If node Malformed.");
+                return ;
             }
             ParserNode *cond = getChild(type,0);
             if(!cond || cond->type != NODE_CONDITION){
-                printf("Condition Node Expected\n");
-                exit(1);
+                semanticError("If statement missing condition.");
+                return ;
+                
             }
             ValueType cType = checkCondition(scope,cond);
             if(cType != TYPE_BOOL){
-                printf("If condition should be of type Boolean");
+                semanticError("If condition must be boolean.");
             } 
             Scope *inner = createScope(scope);
             ParserNode *body;
             for(int i=1;i<type->child_count;i++){
                 body = getChild(type,i);
-                if(!body || body->type != NODE_BODY){
-                    printf("Body Node Expected\n");
-                    exit(1);
-                }
                 checkStatement(inner,body);
-
+                
             }
-                freeScope(inner);
-                break;
-        default:
-            printf("Unknown Statement Type\n");
-            exit(1);
+            addToSymbolTable(inner);
+            freeScope(inner);
             break;
+        default:
+            semanticError("Unknown Statement Type.");
+            break;
+        }
     }
-}
-
-Scope *checkSemantic(ParserNode *root){
-    if(!root || root->type != NODE_ROOT ){
-        printf("Root Node Expected\n");
-        exit(1);
-    }
+    
+    Symbol *checkSemantic(ParserNode *root){
+        if(!root || root->type != NODE_ROOT ){
+            semanticError("Root Node Expected.");
+            return NULL;
+        }
+    
     Scope *global = createScope(NULL);
     for(int i=0; i<root->child_count;i++){
         ParserNode *child = getChild(root,i);
@@ -278,5 +303,11 @@ Scope *checkSemantic(ParserNode *root){
             checkStatement(global,child);
         }
     }
-    return global;
+    if(semantic_err_count>0){
+        printf("Total Semantic Errors: %d\n",semantic_err_count);
+    }
+    addToSymbolTable(global);
+    freeScope(global);
+    return sym_table;
+
 }
