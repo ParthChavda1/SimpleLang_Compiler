@@ -24,9 +24,13 @@ typedef struct Scope{
 }Scope;
 
 Scope *createScope(Scope *parent);
+// Free memory allocated for scope
 void freeScope(Scope *scope);
+// Free symbol Table linked list after its usage 
 void freeSymbolTable(Symbol *s);
+// Add symbol to scope 
 bool addSymbol(Scope *scope, char *name, ValueType type);
+// Looks for symbols in Specific scope if not found movves to parrent scope
 Symbol *symbolLookup(Scope *scope, char *name);
 
 ValueType checkExpression(Scope *scope, ParserNode *exp);

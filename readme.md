@@ -199,6 +199,13 @@ make run INPUT=input.sl OUTPUT=output.asm
 ```
 python3 8bit-computer/asm/asm.py output.asm > 8bit-computer/memory.list
 ```
+```
+ cd ./8bit-computer/
+```
+```
+ make clean && make run
+```
+
 
 ---
 

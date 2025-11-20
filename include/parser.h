@@ -75,10 +75,13 @@ ParserNode *parseTerm(Parser *parser);
 
 
 // helper function 
-
+// Function to get current token from list of token
 Token getCurrentToken(Parser *parser);
+// Increment current counter in Parser 
 Token advanceToken(Parser *parser);
+// Check If the given type is same as current token and increments the current counter
 bool isMatch(TokenType type, Parser *parser);
+// Check comparator is valid or not
 bool isComparator(Parser *parser);
 
 // Functions that helps in debugging

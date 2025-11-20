@@ -90,13 +90,15 @@ void getNextToken(FILE *file, Token *token) {
     return;
 }
 
-
+// This function checks if the character is one of the alphabets
 bool isAlpha(char c){
     return ((c>='A' && c<='Z') || (c>='a' && c<='z'));
 }
+// This function checks if the character is one of digit or alphabet
 bool isAlNum(char c){
     return isAlpha(c) || isDigit(c);
 }
+// This function checks if the character is a digit
 bool isDigit(char c){
     return (c>= '0' && c<= '9');
 }

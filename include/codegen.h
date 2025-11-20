@@ -1,5 +1,5 @@
-#ifndef CODEGEN
-#define CODEGEN
+#ifndef CODEGEN_H
+#define CODEGEN_H
 
 #include "parser.h"
 #include "semantic.h"
