@@ -26,6 +26,34 @@ A full copy of that project is included in the repository for convenience.
 
 ---
 
+## 🛠 Build & Run
+
+### Compile compiler:
+
+```
+make
+```
+
+### Run compiler:
+
+```
+make run INPUT=input.sl OUTPUT=output.asm
+```
+
+### Assemble and run on 8-bit CPU:
+
+```
+python3 8bit-computer/asm/asm.py output.asm > 8bit-computer/memory.list
+```
+```
+ cd ./8bit-computer/
+```
+```
+ make clean && make run
+```
+
+---
+
 ## 🧩 Supported SimpleLang Features
 
 ### ✔ Variable Declarations
@@ -177,35 +205,6 @@ c = 0
 b = 0
 a = 0
 ```
-
----
-
-## 🛠 Build & Run
-
-### Compile compiler:
-
-```
-make
-```
-
-### Run compiler:
-
-```
-make run INPUT=input.sl OUTPUT=output.asm
-```
-
-### Assemble and run on 8-bit CPU:
-
-```
-python3 8bit-computer/asm/asm.py output.asm > 8bit-computer/memory.list
-```
-```
- cd ./8bit-computer/
-```
-```
- make clean && make run
-```
-
 
 ---
 
